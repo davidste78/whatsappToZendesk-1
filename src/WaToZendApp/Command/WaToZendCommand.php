@@ -3,6 +3,7 @@
 namespace WaToZendApp\Command;
 
 use Lib\Config;
+use Lib\ZendeskClient;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,24 +12,48 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WaToZendCommand extends Command
 {
+    /** @var string */
+    private $country;
+    /** @var bool */
+    private $debug = false;
+    /** @var InputInterface */
+    private $input;
+    /** @var OutputInterface */
+    private $output;
 
     protected function configure()
     {
         $this
             ->setName('whatsapp:client:start')
             ->setDescription('Start the whatsapp client')
+            ->addArgument(
+                'country',
+                InputArgument::REQUIRED,
+                'country code 2 letters'
+            )
+            ->addOption(
+                'debug',
+                null,
+                InputOption::VALUE_NONE,
+                'enable debug mode'
+            )
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $username = (string) Config::get('whatsapp.ng.phone');
-        $password = (string) Config::get('whatsapp.ng.password');
-        $nickname = (string) Config::get('whatsapp.ng.nickname');
-        $debug    = false;
+        $this->input    = $input;
+        $this->output   = $output;
+        $this->country  = $input->getArgument('country');
+        $username       = (string) Config::get("whatsapp.$this->country.phone");
+        $password       = (string) Config::get("whatsapp.$this->country.password");
+        $nickname       = (string) Config::get("whatsapp.$this->country.nickname");
 
-        $w = new \WhatsProt($username, $nickname, $debug);
+        if ($input->getOption('debug')) {
+            $this->debug = true;
+        }
 
+        $w = new \WhatsProt($username, $nickname, $this->debug);
         $w->connect();
         $w->loginWithPassword($password);
 
@@ -38,15 +63,17 @@ class WaToZendCommand extends Command
             $data = $w->GetMessages();
             if (!empty($data)) {
                 foreach ($data as $object) {
-                    $message    = $object->getChild('body');
-                    $message    = $message->getData();
-                    $fromName   = $object->getAttribute("notify");
-                    $fromNumber = $object->getAttribute("from");
-//                    $output->writeln($object->nodeString());
-                    $output->writeln("$fromNumber - $fromName : $message");
+                    $this->sendComment($object);
                 }
             }
             sleep(1);
         }
+    }
+
+    protected function sendComment(\ProtocolNode $node)
+    {
+        $client     = new ZendeskClient($this->country);
+        $newTicket  = $client->manage($node);
+        $this->output->writeln($newTicket->ticket->id . " ticket generated/edited");
     }
 }
