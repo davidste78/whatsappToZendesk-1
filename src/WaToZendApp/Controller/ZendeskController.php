@@ -13,24 +13,20 @@ class ZendeskController extends BaseController {
         $client = $client->getClient();
 
         try {
-//            $newTicket = $client->tickets()->create(
-//                array(
-//                    'subject' => "[WhatsApp] asdasdasd",
-//                    'comment' => array (
-//                        'body' => "asga fgg df a gsd "
-//                    ),
-//                    "requester" => array(
-//                        "name"  => "Fernando Rivas",
-//                        "email" => "5491161142881@s.whatsapp.net"
-//                    ),
-//                    'brand_id' => "350972",
-//                    'priority' => 'normal'
-//                )
-//            );
+            $newTicket = $client->ticket()->update(
+            array(
+                'id' => 76,
+                "comment" => array(
+                    "public" => true,
+                    "body"   => "hola ticket",
+                    "author_id" => 870236612
+                )
+            )
+            );
 
-            $newTicket = $client->search(array(
-                'query' => 'status<solved requester:5491161142881@s.whatsapp.net type:ticket'
-            ));
+            //$newTicket = $client->search(array(
+              //  'query' => 'status<solved requester:5491161142881@s.whatsapp.net type:ticket'
+            //));
 
             $this->render($newTicket);
         } catch(\Exception $e) {

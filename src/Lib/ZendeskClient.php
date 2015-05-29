@@ -31,23 +31,20 @@ Class ZendeskClient
     {
         $message    = $node->getChild('body');
         $message    = $message->getData();
-        $fromName   = $node->getAttribute("notify");
-        $fromNumber = $node->getAttribute("from");
+        $fromName   = $node->getAttribute('notify');
+        $fromNumber = $node->getAttribute('from');
         $ticket     = $this->hasOneOpen($fromNumber);
 
         if ($ticket) {
             $result = $this->client->ticket()->update(
                 array(
                     'id' => $ticket->id,
-                    "comment" => array(
-                        "public" => true,
-                        "body"   => $message
-                    ),
-                    "requester" => array(
-                        "name"  => $fromName,
-                        "email" => $fromNumber
-                    ),
-                )
+                    'comment' => array(
+                        'public' => true,
+                        'body'   => $message,
+                        'author_id' => $ticket->submitter_id
+                        ),
+                    )
             );
         } else {
             $result = $this->client->tickets()->create(
@@ -56,6 +53,10 @@ Class ZendeskClient
                     'comment' => array (
                         'body'      => $message,
                         'author_id' => $ticket->submitter_id
+                    ),
+                    'requester' => array(
+                        'name'  => $fromName,
+                        'email' => $fromNumber
                     ),
                     'brand_id' => $this->brandId,
                     'priority' => 'normal'
