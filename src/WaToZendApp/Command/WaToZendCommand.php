@@ -20,6 +20,10 @@ class WaToZendCommand extends Command
     private $input;
     /** @var OutputInterface */
     private $output;
+    /** @var \WhatsProt */
+    private $w;
+    /** @var ZendeskClient */
+    private $z;
 
     protected function configure()
     {
@@ -53,27 +57,57 @@ class WaToZendCommand extends Command
             $this->debug = true;
         }
 
-        $w = new \WhatsProt($username, $nickname, $this->debug);
-        $w->connect();
-        $w->loginWithPassword($password);
+        $this->z = new ZendeskClient($this->country);
+        $this->w = new \WhatsProt($username, $nickname, $this->debug);
+        $this->w->connect();
+        $this->w->loginWithPassword($password);
 
-        $output->writeln('[] Listen mode:');
-        while (TRUE) {
-            $w->PollMessage();
-            $data = $w->GetMessages();
+        while (true) {
+            $this->getMessages();
+            $this->getComments();
+            sleep(5);
+        }
+    }
+
+    protected function getMessages()
+    {
+        $this->output->writeln('<info>Listening Messages...</info>');
+        $messages = 0;
+        while ($this->w->PollMessage()) {
+            $data = $this->w->GetMessages();
             if (!empty($data)) {
                 foreach ($data as $object) {
                     $this->sendComment($object);
+                    $messages++;
                 }
             }
             sleep(1);
         }
+        $this->output->writeln("<info>$messages</info> messages where sent to zendesk");
     }
 
     protected function sendComment(\ProtocolNode $node)
     {
-        $client     = new ZendeskClient($this->country);
-        $newTicket  = $client->manage($node);
-        $this->output->writeln($newTicket->ticket->id . " ticket generated/edited");
+        $ticket  = $this->z->manageSend($node);
+        $this->output->writeln("ticket generated/edited " . $ticket->ticket->id);
+    }
+
+    protected function getComments()
+    {
+        $this->output->writeln('<info>Looking for comments...</info>');
+        $count = 0;
+        $messages = $this->z->manageGet();
+
+        foreach ($messages as $message) {
+            $count++;
+            $this->sendMessage($message['phone'], $message['message']);
+        }
+        $this->output->writeln("<info>$count</info> comments where sent to WhatsApp");
+    }
+
+    protected function sendMessage($target, $message)
+    {
+        $this->w->sendMessage($target , $message);
+        sleep(1);
     }
 }
