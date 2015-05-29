@@ -45,9 +45,9 @@ class WaToZendCommand extends Command
         $this->input    = $input;
         $this->output   = $output;
         $this->country  = $input->getArgument('country');
-        $username       = (string) Config::get("whatsapp.$this->country.phone");
-        $password       = (string) Config::get("whatsapp.$this->country.password");
-        $nickname       = (string) Config::get("whatsapp.$this->country.nickname");
+        $username       = (string) Config::get("$this->country.whatsapp.phone");
+        $password       = (string) Config::get("$this->country.whatsapp.password");
+        $nickname       = (string) Config::get("$this->country.whatsapp.nickname");
 
         if ($input->getOption('debug')) {
             $this->debug = true;

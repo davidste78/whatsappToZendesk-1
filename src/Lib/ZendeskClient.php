@@ -13,10 +13,10 @@ Class ZendeskClient
 
     public function __construct($country)
     {
-        $subDomain      = Config::get("zendesk.$country.sub_domain");
-        $username       = Config::get("zendesk.$country.username");
-        $token          = Config::get("zendesk.$country.token");
-        $this->brandId  = Config::get("zendesk.$country.brand_id");
+        $subDomain      = Config::get("$country.zendesk.sub_domain");
+        $username       = Config::get("$country.zendesk.username");
+        $token          = Config::get("$country.zendesk.token");
+        $this->brandId  = Config::get("$country.zendesk.brand_id");
 
         $this->client = new ZendeskAPI($subDomain, $username);
         $this->client->setAuth('token', $token);
